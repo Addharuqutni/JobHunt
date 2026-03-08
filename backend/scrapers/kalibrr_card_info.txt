@@ -1,0 +1,8 @@
+ELEMENT:
+<a class="k-text-black" itemprop="name" href="/id-ID/c/msbu-konsultan-indonesia/jobs/264430/software-engineer-2">Software Engineer</a>
+
+PARENT:
+<h2 data-tooltip-id="job-title-tooltip-[object Object]" class="lg:k-w-full k-text-2xl k-font-medium k-font-bold k-text-ellipsis k-overflow-hidden k-whitespace-normal css-1gzvnis"><a class="k-text-black" itemprop="name" href="/id-ID/c/msbu-konsultan-indonesia/jobs/264430/software-engineer-2">Software Engineer</a></h2>...
+
+CONTAINER:
+<div class="k-font-dm-sans k-rounded-lg k-bg-white k-border-solid k-border hover:k-border-2 hover:k-border-primary-color k-border k-group k-flex k-flex-col k-justify-between css-1otdiuc"><div class="k-flex k-p-4 k-gap-2 md:k-gap-4"><div><a class="k-border k-border-gray k-bg-white k-flex k-items-center k-flex-shrink k-justify-center k-text-4xl k-text-subdued k-overflow-hidden k-px-4 k-py-2 k-h-20 k-w-24 k-rounded-lg" href="/id-ID/c/msbu-konsultan-indonesia/jobs?source=B2C%20Landing%20Page&amp;action=Company%20Logo&amp;filter="><div><img loading="eager" src="https://rec-data.kalibrr.com/www.kalibrr.com/logos/626824YHRHUUYZGU3FAL6A8HMXNSCR764L38DZPX-68e08eae.png" alt="MSBU Konsultan Indonesia" width="130" height="80" class="k-block k-max-w-full k-max-h-full k-bg-white k-mx-auto" decoding="async"></div></a></div><div class="k-flex-1 k-h-full k-flex k-flex-col k-justify-center"><h2 data-tooltip-id="job-title-tooltip-[object Object]" class="lg:k-w-full k-text-2xl k-font-medium k-font-bold k-...

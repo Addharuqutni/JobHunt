@@ -1,0 +1,23 @@
+/* App.css is mostly empty now as we use index.css for globals.
+   We can put app-specific utilities here if needed. */
+.app-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  /* Important for flex children to allow truncation */
+  height: 100%;
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}

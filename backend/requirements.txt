@@ -1,0 +1,6 @@
+# JobSentinel Backend Dependencies
+fastapi==0.115.12
+uvicorn==0.34.3
+playwright==1.49.1
+beautifulsoup4==4.13.4
+requests==2.32.3

@@ -1,0 +1,405 @@
+.settings-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.settings-header .page-title {
+    font-size: 1.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.settings-header .page-subtitle {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.settings-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.btn-secondary {
+    background: var(--color-bg-surface-hover);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all var(--transition-fast);
+}
+
+.btn-secondary:hover {
+    background: var(--color-bg-surface);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    transform: translateY(-2px);
+}
+
+/* Settings Grid */
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 1.25rem;
+}
+
+.settings-section {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.section-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.section-icon {
+    color: var(--color-primary);
+}
+
+.section-desc {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-top: -0.25rem;
+}
+
+/* Scraper List */
+.scraper-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.scraper-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-base);
+    border: 1px solid var(--color-border);
+    transition: all var(--transition-fast);
+}
+
+.scraper-item.enabled {
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.scraper-item:hover {
+    border-color: var(--color-border-hover);
+}
+
+.scraper-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.scraper-icon {
+    font-size: 1.5rem;
+}
+
+.scraper-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text-primary);
+}
+
+.scraper-status {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.scraper-item.enabled .scraper-status {
+    color: var(--color-success);
+}
+
+.scraper-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.pages-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+.mini-select {
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    -webkit-appearance: none;
+}
+
+.mini-select:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.mini-select option {
+    background: var(--color-bg-surface);
+}
+
+/* Toggle Button */
+.toggle-btn {
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    position: relative;
+    transition: background var(--transition-fast);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.toggle-btn.on {
+    background: var(--color-primary);
+}
+
+.toggle-btn.off {
+    background: var(--color-bg-surface-hover);
+    border: 1px solid var(--color-border);
+}
+
+.toggle-knob {
+    position: absolute;
+    top: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    transition: left var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+}
+
+.toggle-btn.on .toggle-knob {
+    left: 23px;
+}
+
+.toggle-btn.off .toggle-knob {
+    left: 3px;
+}
+
+/* Textarea */
+.settings-textarea {
+    width: 100%;
+    background: var(--color-bg-base);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-mono);
+    font-size: 0.85rem;
+    padding: 0.75rem 1rem;
+    resize: vertical;
+    line-height: 1.6;
+    transition: border-color var(--transition-fast);
+}
+
+.settings-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.keyword-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.keyword-tag {
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--color-primary);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: var(--radius-xl);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Form Elements */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-label svg {
+    color: var(--color-text-muted);
+}
+
+.form-input {
+    background: var(--color-bg-base);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-base);
+    font-size: 0.9rem;
+    padding: 0.65rem 1rem;
+    transition: border-color var(--transition-fast);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.form-input::placeholder {
+    color: var(--color-text-muted);
+}
+
+/* Telegram Status */
+.telegram-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--color-bg-base);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+}
+
+.connection-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.connection-dot.connected {
+    background: var(--color-success);
+    box-shadow: 0 0 6px var(--color-success);
+}
+
+.connection-dot.disconnected {
+    background: var(--color-text-muted);
+}
+
+/* Range Input */
+.range-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.range-input {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: var(--color-bg-surface-hover);
+    border-radius: 3px;
+    outline: none;
+}
+
+.range-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    cursor: pointer;
+    box-shadow: 0 0 6px rgba(99, 102, 241, 0.4);
+}
+
+.range-input::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 6px rgba(99, 102, 241, 0.4);
+}
+
+.range-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    font-family: var(--font-family-mono);
+    min-width: 40px;
+    text-align: center;
+}
+
+/* Schedule Info */
+.schedule-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    padding: 0.5rem 0;
+}
+
+/* Save Toast */
+.save-toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.5rem;
+    background: var(--color-success);
+    color: white;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+}
