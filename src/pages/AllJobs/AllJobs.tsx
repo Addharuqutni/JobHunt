@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, Building2, MapPin, Calendar, Clock, CheckCircle, Search, Filter, RefreshCw } from 'lucide-react';
+import { ExternalLink, Building2, MapPin, Calendar, Clock, CheckCircle, Search, Filter, RefreshCw, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { API, getHeaders } from '../../config';
 import './AllJobs.css';
 
@@ -22,6 +23,7 @@ const AllJobs: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [sourceFilter, setSourceFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [sortOrder, setSortOrder] = useState('newest'); // 'newest' | 'oldest'
     const [currentPage, setCurrentPage] = useState(1);
     const jobsPerPage = 20;
 
@@ -31,7 +33,7 @@ const AllJobs: React.FC = () => {
 
     useEffect(() => {
         applyFilters();
-    }, [jobs, searchQuery, sourceFilter, statusFilter]);
+    }, [jobs, searchQuery, sourceFilter, statusFilter, sortOrder]);
 
     const fetchJobs = async () => {
         setLoading(true);
@@ -70,6 +72,13 @@ const AllJobs: React.FC = () => {
             result = result.filter(job => !job.is_sent);
         }
 
+        // Apply Sorting by Date
+        if (sortOrder === 'newest') {
+            result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        } else if (sortOrder === 'oldest') {
+            result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        }
+
         setFilteredJobs(result);
         setCurrentPage(1);
     };
@@ -95,6 +104,29 @@ const AllJobs: React.FC = () => {
         }
     };
 
+    const exportToExcel = () => {
+        if (filteredJobs.length === 0) {
+            alert("No data to export");
+            return;
+        }
+
+        const dataToExport = filteredJobs.map(job => ({
+            Title: job.title,
+            Company: job.company,
+            Location: job.location,
+            Source: job.source,
+            Status: job.is_sent ? 'Sent' : 'Pending',
+            Date: formatDate(job.created_at),
+            Link: job.url
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Jobs");
+
+        XLSX.writeFile(workbook, `JobSentinel_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    };
+
     return (
         <div className="all-jobs-page animate-fade-in">
             <div className="all-jobs-header">
@@ -104,10 +136,16 @@ const AllJobs: React.FC = () => {
                         Browse and filter all {jobs.length} scraped job postings.
                     </p>
                 </div>
-                <button className="btn btn-primary" onClick={fetchJobs}>
-                    <RefreshCw size={16} className={loading ? 'spin' : ''} />
-                    Refresh
-                </button>
+                <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
+                    <button className="btn btn-secondary" onClick={exportToExcel} disabled={filteredJobs.length === 0}>
+                        <Download size={16} />
+                        Export Excel
+                    </button>
+                    <button className="btn btn-primary" onClick={fetchJobs}>
+                        <RefreshCw size={16} className={loading ? 'spin' : ''} />
+                        Refresh
+                    </button>
+                </div>
             </div>
 
             {/* Filters Bar */}
@@ -147,6 +185,17 @@ const AllJobs: React.FC = () => {
                             <option value="all">All Status</option>
                             <option value="sent">Sent</option>
                             <option value="pending">Pending</option>
+                        </select>
+                    </div>
+
+                    <div className="filter-select-wrapper">
+                        <select
+                            value={sortOrder}
+                            onChange={(e) => setSortOrder(e.target.value)}
+                            className="filter-select"
+                        >
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
                         </select>
                     </div>
                 </div>
