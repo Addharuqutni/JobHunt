@@ -11,18 +11,19 @@ interface ScraperConfig {
 }
 
 const Settings: React.FC = () => {
-    const [keywords, setKeywords] = useState('react developer, frontend developer');
+    const [keywords, setKeywords] = useState('full stack developer, frontend developer');
     const [telegramToken, setTelegramToken] = useState('');
     const [telegramChatId, setTelegramChatId] = useState('');
-    const [scheduleInterval, setScheduleInterval] = useState('6');
+    const [scheduleInterval, setScheduleInterval] = useState('2');
     const [maxResults, setMaxResults] = useState('100');
     const [saved, setSaved] = useState(false);
     const [loading, setLoading] = useState(true);
 
     const [scrapers, setScrapers] = useState<ScraperConfig[]>([
         { enabled: true, name: 'Jobstreet', icon: '🏢', maxPages: 1 },
-        { enabled: true, name: 'Glints', icon: '✨', maxPages: 3 },
+        { enabled: true, name: 'Glints', icon: '✨', maxPages: 1 },
         { enabled: true, name: 'Kalibrr', icon: '🎯', maxPages: 1 },
+        { enabled: true, name: 'Dealls', icon: '🤝', maxPages: 1 },
     ]);
 
     // Load settings from backend on mount
@@ -42,7 +43,21 @@ const Settings: React.FC = () => {
                             const savedScrapers = typeof data.scrapers === 'string'
                                 ? JSON.parse(data.scrapers)
                                 : data.scrapers;
-                            if (Array.isArray(savedScrapers)) setScrapers(savedScrapers);
+                            if (Array.isArray(savedScrapers)) {
+                                setScrapers(prevScrapers => {
+                                    const merged = [...prevScrapers];
+                                    savedScrapers.forEach(saved => {
+                                        const index = merged.findIndex(s => s.name === saved.name);
+                                        if (index !== -1) {
+                                            merged[index] = { ...merged[index], ...saved };
+                                        } else {
+                                            // Handle case where DB has an unknown scraper
+                                            merged.push(saved);
+                                        }
+                                    });
+                                    return merged;
+                                });
+                            }
                         } catch { /* keep defaults */ }
                     }
                 }

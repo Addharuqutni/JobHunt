@@ -1,6 +1,7 @@
 // Centralized API configuration
 // Uses Vite environment variable VITE_API_URL, falls back to localhost for development
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export const WS_URL = API_BASE_URL.replace(/^http/, 'ws');
 export const API_KEY = import.meta.env.VITE_API_KEY || 'dev-secret-key-123';
 
 export const getHeaders = () => ({
@@ -20,4 +21,5 @@ export const API = {
     stats: () => `${API_BASE_URL}/api/stats`,
     scrape: () => `${API_BASE_URL}/api/scrape`,
     settings: () => `${API_BASE_URL}/api/settings`,
+    wsScrapeStatus: () => `${WS_URL}/api/ws/scrape-status?api_key=${API_KEY}`,
 };

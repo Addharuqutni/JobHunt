@@ -1,10 +1,15 @@
-from fastapi import FastAPI, Header, HTTPException, Depends
+from fastapi import FastAPI, Header, HTTPException, Depends, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-import sqlite3
+import asyncio
 import os
 import json
+import redis
 import threading
-from db import get_connection, init_db, get_all_settings, save_setting
+from sqlalchemy.orm import Session
+from sqlalchemy import func, or_
+from app.database import get_db, engine
+from app.models import Job, Setting, Base
+from db import get_all_settings, save_setting
 
 API_KEY = os.environ.get("API_KEY", "dev-secret-key-123")
 
@@ -25,77 +30,94 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "jobs.db")
+# Ensure DB tables exist on startup (Alembic handles this fully later)
+Base.metadata.create_all(bind=engine)
 
-# Ensure DB tables exist on startup
-init_db()
+# Redis configuration with explicit local-only toggle
+from app.config import settings
+USE_REDIS = os.environ.get("USE_REDIS", "false").lower() == "true"
 
-# Scraper lock state to prevent thread exhaustion DoS
-is_scraping = False
+IS_REDIS_AVAILABLE = False
+redis_client = None
+
+if USE_REDIS:
+    try:
+        redis_client = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
+        redis_client.ping()
+        IS_REDIS_AVAILABLE = True
+        print(f"[Redis] Connected to {settings.REDIS_URL}")
+    except Exception as e:
+        print(f"[Redis] Failed to connect: {e}. Falling back to LOCAL mode.")
+else:
+    print("[System] Redis is DISABLED. Using local execution mode.")
+
+# Local lock fallback
 scraper_lock = threading.Lock()
-
-def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+is_scraping_local = False # Track local state if redis is down
 
 @app.get("/api/jobs")
-def get_jobs(limit: int = 100, source: str = None, search: str = None):
+def get_jobs(limit: int = 100, source: str = None, search: str = None, db: Session = Depends(get_db)):
     """Retrieve jobs from the database with optional filtering."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    query = "SELECT * FROM jobs WHERE 1=1"
-    params = []
+    query = db.query(Job)
     
     if source:
-        query += " AND LOWER(source) = ?"
-        params.append(source.lower())
+        query = query.filter(func.lower(Job.source) == source.lower())
     
     if search:
-        query += " AND (LOWER(title) LIKE ? OR LOWER(company) LIKE ? OR LOWER(location) LIKE ?)"
         search_term = f"%{search.lower()}%"
-        params.extend([search_term, search_term, search_term])
+        query = query.filter(
+            or_(
+                func.lower(Job.title).like(search_term),
+                func.lower(Job.company).like(search_term),
+                func.lower(Job.location).like(search_term)
+            )
+        )
     
-    query += " ORDER BY created_at DESC LIMIT ?"
-    params.append(limit)
+    jobs = query.order_by(Job.created_at.desc()).limit(limit).all()
     
-    cursor.execute(query, params)
-    jobs = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return {"jobs": jobs, "total": len(jobs)}
+    # Format to match existing React frontend expectations
+    job_dicts = []
+    for j in jobs:
+        job_dicts.append({
+            "id": j.id,
+            "job_hash": j.job_hash,
+            "title": j.title,
+            "company": j.company,
+            "location": j.location,
+            "url": j.url,
+            "source": j.source,
+            "is_sent": 1 if j.is_sent else 0,
+            "created_at": j.created_at.isoformat() if j.created_at else None
+        })
+        
+    return {"jobs": job_dicts, "total": len(jobs)}
 
 @app.get("/api/stats")
-def get_stats():
+def get_stats(db: Session = Depends(get_db)):
     """Retrieve dashboard statistics."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    total_jobs = db.query(func.count(Job.id)).scalar()
+    sent_jobs = db.query(func.count(Job.id)).filter(Job.is_sent == True).scalar()
     
-    cursor.execute("SELECT COUNT(*) FROM jobs")
-    total_jobs = cursor.fetchone()[0]
+    # Active sources
+    active_sources_count = db.query(func.count(func.distinct(Job.source))).scalar()
     
-    cursor.execute("SELECT COUNT(*) FROM jobs WHERE is_sent = 1")
-    sent_jobs = cursor.fetchone()[0]
-    
-    cursor.execute("SELECT COUNT(DISTINCT source) FROM jobs")
-    active_sources = cursor.fetchone()[0]
-    
-    cursor.execute("SELECT COUNT(*) FROM jobs WHERE created_at >= date('now', '-1 day')")
-    new_today = cursor.fetchone()[0]
-    
-    conn.close()
+    # New today (SQLite uses text dates natively, SA does its best depending on DB dialect.
+    # For robust cross-DB compatibility, a timezone aware comparison is best, but we'll use a direct filter)
+    from datetime import datetime, timedelta
+    yesterday = datetime.now() - timedelta(days=1)
+    new_today = db.query(func.count(Job.id)).filter(Job.created_at >= yesterday).scalar()
     
     return {
         "totalJobs": total_jobs,
         "newToday": new_today,
         "sentToTelegram": sent_jobs,
-        "activeSources": active_sources
+        "activeSources": active_sources_count
     }
 
 @app.get("/api/settings")
-def get_settings():
+def get_settings(db: Session = Depends(get_db)):
     """Retrieve all saved settings."""
-    settings = get_all_settings()
+    settings = get_all_settings(db)
     # Parse JSON values back to objects where applicable
     result = {}
     for key, value in settings.items():
@@ -106,41 +128,91 @@ def get_settings():
     return result
 
 @app.post("/api/settings")
-def update_settings(settings: dict):
+def update_settings(settings: dict, db: Session = Depends(get_db)):
     """Save settings to the database."""
     for key, value in settings.items():
         # Serialize complex values as JSON
         if isinstance(value, (dict, list)):
-            save_setting(key, json.dumps(value))
+            save_setting(key, json.dumps(value), db)
         else:
-            save_setting(key, str(value))
+            save_setting(key, str(value), db)
     return {"status": "saved", "message": "Settings saved successfully."}
-
-def run_scraper_pipeline():
-    """Run the scraper pipeline in a separate thread."""
-    global is_scraping
-    try:
-        from main import job_scraper_pipeline
-        job_scraper_pipeline()
-    except Exception as e:
-        print(f"[API] Scraper pipeline error: {e}")
-    finally:
-        with scraper_lock:
-            is_scraping = False
 
 @app.post("/api/scrape")
 def trigger_scrape():
-    """Trigger scraper pipeline in background."""
-    global is_scraping
+    """Trigger scraper pipeline. Uses Redis/Celery if enabled, otherwise local threading."""
+    global is_scraping_local
     
+    if USE_REDIS and IS_REDIS_AVAILABLE:
+        try:
+            # Attempt to acquire a distributed lock in Redis for max 1 hour
+            acquired = redis_client.set("scraper_lock", "1", nx=True, ex=3600)
+            if not acquired:
+                raise HTTPException(status_code=429, detail="Scraper is already running (Redis Lock).")
+                
+            from app.worker import run_job_scraper
+            run_job_scraper.delay()  # Dispatch to Celery worker Queue
+            return {"status": "started", "message": "Scraper task dispatched to Celery worker."}
+        except Exception as e:
+            print(f"[Redis] Error dispatching task: {e}. Falling back to local.")
+
+    # LOCAL MODE (Standard threading)
     with scraper_lock:
-        if is_scraping:
-            raise HTTPException(status_code=429, detail="Scraper pipeline is already running.")
-        is_scraping = True
-        
-    thread = threading.Thread(target=run_scraper_pipeline, daemon=True)
+        if is_scraping_local:
+            raise HTTPException(status_code=429, detail="Scraper is already running locally.")
+        is_scraping_local = True
+
+    def run_local_task():
+        global is_scraping_local
+        try:
+            # In local mode, we run the pipeline in the same process but in a background thread
+            from main import job_scraper_pipeline
+            job_scraper_pipeline()
+        finally:
+            with scraper_lock:
+                is_scraping_local = False
+
+    thread = threading.Thread(target=run_local_task, daemon=True)
     thread.start()
-    return {"status": "started", "message": "Scraper pipeline started in background."}
+    return {"status": "started", "message": "Scraper started in local background thread (Redis/Celery disabled)."}
+
+@app.websocket("/api/ws/scrape-status")
+async def websocket_scrape_status(websocket: WebSocket, api_key: str = None):
+    """WebSocket endpoint to stream real-time scraping progress."""
+    if api_key != API_KEY:
+        await websocket.close(code=1008, reason="Unauthorized")
+        return
+
+    await websocket.accept()
+    
+    if not IS_REDIS_AVAILABLE:
+        # If no redis, we can't do pubsub easily. We'll just stay open but send nothing
+        # or send a warning.
+        await websocket.send_json({"message": "Real-time updates disabled (Redis unavailable)", "progress": 0})
+        # Keep connection alive so it doesn't spam reconnection
+        try:
+            while True:
+                await asyncio.sleep(10)
+        except WebSocketDisconnect:
+            return
+
+    pubsub = redis_client.pubsub()
+    pubsub.subscribe("scrape_progress")
+    
+    try:
+        while True:
+            # Poll for messages
+            message = pubsub.get_message(ignore_subscribe_messages=True)
+            if message:
+                await websocket.send_text(message['data'])
+                
+            await asyncio.sleep(0.5)
+            
+    except WebSocketDisconnect:
+        pass
+    finally:
+        pubsub.unsubscribe("scrape_progress")
+        pubsub.close()
 
 if __name__ == "__main__":
     import uvicorn

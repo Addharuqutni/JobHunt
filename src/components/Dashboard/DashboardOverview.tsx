@@ -42,6 +42,74 @@ const DashboardOverview: React.FC = () => {
         fetchStats();
     }, []);
 
+    const [scrapingProgress, setScrapingProgress] = useState<number | null>(null);
+    const [scrapingMessage, setScrapingMessage] = useState<string>('');
+    const [isScraping, setIsScraping] = useState<boolean>(false);
+
+    useEffect(() => {
+        let ws: WebSocket;
+        const connectWs = () => {
+            ws = new WebSocket(API.wsScrapeStatus());
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.message) setScrapingMessage(data.message);
+                    if (data.progress !== undefined) {
+                        setScrapingProgress(data.progress);
+                        if (!isScraping) setIsScraping(true);
+                        
+                        if (data.progress >= 100) {
+                            setTimeout(() => {
+                                setScrapingProgress(null);
+                                setScrapingMessage('');
+                                setIsScraping(false);
+                            }, 5000);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to parse WS message", e);
+                }
+            };
+            
+            ws.onclose = () => {
+                // Optional: Attempt reconnect after a delay if desired. 
+                // Currently, we'll let it close safely.
+            };
+        };
+        
+        connectWs();
+        return () => {
+            if (ws) ws.close();
+        };
+    }, []);
+
+    const handleForceScrape = async () => {
+        if (isScraping) return;
+        try {
+            setIsScraping(true);
+            setScrapingMessage("Initializing Scraper...");
+            setScrapingProgress(0);
+            const response = await fetch(API.scrape(), {
+                method: 'POST',
+                headers: getHeaders()
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                console.error("Scrape trigged failed:", err);
+                setIsScraping(false);
+                setScrapingProgress(null);
+                setScrapingMessage("");
+                alert(`Error: ${err.detail || 'Could not start scraper.'}`);
+            }
+        } catch (error) {
+            console.error("Failed to start scraper", error);
+            setIsScraping(false);
+            setScrapingProgress(null);
+            setScrapingMessage("");
+        }
+    };
+
     return (
         <div className="dashboard-overview">
             <div className="overview-header">
@@ -50,12 +118,31 @@ const DashboardOverview: React.FC = () => {
                     <p className="page-subtitle">Your automated job scraping insights for today.</p>
                 </div>
                 <div className="overview-actions">
-                    <button className="btn btn-primary">
-                        <Globe size={16} />
-                        Force Scrape Now
+                    <button 
+                        className="btn btn-primary" 
+                        onClick={handleForceScrape}
+                        disabled={isScraping}
+                    >
+                        <Globe size={16} className={isScraping ? "spin-animation" : ""} />
+                        {isScraping ? "Scraping in Progress..." : "Force Scrape Now"}
                     </button>
                 </div>
             </div>
+
+            {scrapingProgress !== null && (
+                <div className="progress-container glass-panel">
+                    <div className="progress-header">
+                        <span className="progress-text">{scrapingMessage}</span>
+                        <span className="progress-percentage">{scrapingProgress}%</span>
+                    </div>
+                    <div className="progress-bar-bg">
+                        <div 
+                            className="progress-bar-fill" 
+                            style={{ width: `${scrapingProgress}%` }}
+                        ></div>
+                    </div>
+                </div>
+            )}
 
             <div className="stats-grid">
                 <StatCard

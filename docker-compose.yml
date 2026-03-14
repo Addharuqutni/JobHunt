@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: jobsentinel
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d jobsentinel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  api:
+    build: 
+      context: ./backend
+    command: bash -c "alembic upgrade head && uvicorn api:app --host 0.0.0.0 --port 8000"
+    volumes:
+      - ./backend:/app  # For hot-reload in dev
+    environment:
+      - DB_URL=postgresql://admin:secretpassword@db:5432/jobsentinel
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - API_KEY=dev-secret-key-123
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    build:
+      context: ./backend
+    # We use eventlet pool because playwright is IO bound, but processes are safer for Chromium.
+    # We'll stick to 1 worker process doing 1 scrape at a time to save memory.
+    command: celery -A app.worker.celery_app worker --loglevel=info -c 1
+    volumes:
+      - ./backend:/app
+    environment:
+      - DB_URL=postgresql://admin:secretpassword@db:5432/jobsentinel
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # Pass through user credentials if they exist as ENV vars
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+    depends_on:
+      - redis
+      - db
+      - api # Wait for api to run alembic migrations
+
+  frontend:
+    build:
+      context: .
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:
