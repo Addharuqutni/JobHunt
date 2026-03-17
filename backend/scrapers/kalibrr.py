@@ -69,7 +69,14 @@ class KalibrrScraper:
                                 }
                             }
                             
-                            results.push({title, link, company, location});
+                            let date = "";
+                            let dateEl = Array.from(card.querySelectorAll('span, div'))
+                                .find(el => el.textContent.toLowerCase().includes('ago') || el.textContent.toLowerCase().includes('hari'));
+                            if (dateEl) {
+                                date = dateEl.textContent.trim();
+                            }
+                            
+                            results.push({title, link, company, location, date});
                         });
                         return results;
                     }
@@ -81,12 +88,13 @@ class KalibrrScraper:
                         title = job.get('title', 'Unknown Title')
                         company = job.get('company', 'Unknown Company')
                         location = job.get('location', 'Unknown')
+                        date = job.get('date', '')
                         link = job.get('link', url)
                         clean_link = link.split('?')[0]
                         
-                        if save_job(title, company, location, clean_link, "Kalibrr"):
+                        if save_job(title, company, location, clean_link, "Kalibrr", date):
                             results.append({"title": title, "company": company})
-                            print(f"  -> Found: {title} at {company} ({location})")
+                            print(f"  -> Found: {title} at {company} ({location}) - {date}")
                             
                 except Exception as e:
                     print(f"[Kalibrr] Error loading {url}: {e}")

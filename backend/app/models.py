@@ -12,6 +12,7 @@ class Job(Base):
     location = Column(String, nullable=True)
     url = Column(String, nullable=False)
     source = Column(String, nullable=False)
+    posted_at = Column(String, nullable=True)
     is_sent = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

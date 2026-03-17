@@ -86,6 +86,7 @@ def get_jobs(limit: int = 100, source: str = None, search: str = None, db: Sessi
             "location": j.location,
             "url": j.url,
             "source": j.source,
+            "posted_at": j.posted_at,
             "is_sent": 1 if j.is_sent else 0,
             "created_at": j.created_at.isoformat() if j.created_at else None
         })

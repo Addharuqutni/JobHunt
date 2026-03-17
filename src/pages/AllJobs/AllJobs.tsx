@@ -13,6 +13,7 @@ interface Job {
     url: string;
     source: string;
     is_sent: number;
+    posted_at: string;
     created_at: string;
 }
 
@@ -116,7 +117,8 @@ const AllJobs: React.FC = () => {
             Location: job.location,
             Source: job.source,
             Status: job.is_sent ? 'Sent' : 'Pending',
-            Date: formatDate(job.created_at),
+            Posted: job.posted_at || 'N/A',
+            'Scraped Date': formatDate(job.created_at),
             Link: job.url
         }));
 
@@ -241,8 +243,14 @@ const AllJobs: React.FC = () => {
                                     <span>{job.location || 'Unknown Location'}</span>
                                 </div>
                                 <div className="detail-row">
+                                    <Clock size={15} />
+                                    <span>{job.posted_at || 'Unknown Date'}</span>
+                                </div>
+                                <div className="detail-row">
                                     <Calendar size={15} />
-                                    <span>{formatDate(job.created_at)}</span>
+                                    <span title={`Scraped at: ${formatDate(job.created_at)}`}>
+                                        {formatDate(job.created_at)}
+                                    </span>
                                 </div>
                             </div>
 

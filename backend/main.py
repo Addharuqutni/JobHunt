@@ -28,7 +28,7 @@ def job_scraper_pipeline():
     init_db()
     
     # Load settings from db
-    keywords_setting = get_setting("keywords", "full stack developer, frontend developer, backend developer, software engineer, ui ux designer, data analyst, data scientist, machine learning engineer, it support")
+    keywords_setting = get_setting("keywords", "full stack developer")
     KEYWORDS = [k.strip() for k in keywords_setting.split(",") if k.strip()]
     
     scrapers_config_json = get_setting("scrapers", '[]')

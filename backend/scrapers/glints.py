@@ -64,14 +64,24 @@ class GlintsScraper:
                         location_elem = card.find('div', class_=lambda c: c and 'Location' in c)
                         location = location_elem.get_text(strip=True) if location_elem else "Unknown Location"
                         
+                        # Time/Date element usually has 'Time' or looks like 'X days ago'
+                        date_elem = card.find('span', class_=lambda c: c and 'Time' in c) or card.find('div', class_=lambda c: c and 'Time' in c)
+                        if not date_elem:
+                            # Fallback: look for common patterns like 'ago'
+                            for span in card.find_all(['span', 'div']):
+                                if 'ago' in span.get_text().lower() or 'hari' in span.get_text().lower():
+                                    date_elem = span
+                                    break
+                        date = date_elem.get_text(strip=True) if date_elem else ""
+                        
                         # Link is usually the parent a tag
                         url_elem = card.find_parent('a', href=True) or card.find('a', href=True)
                         link = f"https://glints.com{url_elem['href']}" if url_elem else url
                         clean_link = link.split('?')[0]
                         
-                        if save_job(title, company, location, clean_link, "Glints"):
+                        if save_job(title, company, location, clean_link, "Glints", date):
                             results.append({"title": title, "company": company})
-                            print(f"  -> Found: {title} at {company}")
+                            print(f"  -> Found: {title} at {company} ({location}) - {date}")
                             
                     except Exception as e:
                         print(f"Error parse card: {e}")

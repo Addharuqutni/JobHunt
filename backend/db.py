@@ -15,7 +15,7 @@ def generate_job_hash(title, company, url):
     hash_str = f"{title}_{company}_{url}".lower()
     return hashlib.md5(hash_str.encode()).hexdigest()
 
-def save_job(title, company, location, url, source, db: Session = None):
+def save_job(title, company, location, url, source, posted_at=None, db: Session = None):
     """Save a new job to the database."""
     close_db = False
     if db is None:
@@ -38,6 +38,7 @@ def save_job(title, company, location, url, source, db: Session = None):
             location=location,
             url=url,
             source=source,
+            posted_at=posted_at,
             is_sent=False,
             created_at=datetime.now()
         )
@@ -64,7 +65,7 @@ def get_unsent_jobs(db: Session = None):
         # Convert to dict to match previous interface
         return [{"id": j.id, "job_hash": j.job_hash, "title": j.title, "company": j.company, 
                  "location": j.location, "url": j.url, "source": j.source, 
-                 "is_sent": j.is_sent, "created_at": j.created_at} for j in jobs]
+                 "posted_at": j.posted_at, "is_sent": j.is_sent, "created_at": j.created_at} for j in jobs]
     finally:
         if close_db:
             db.close()

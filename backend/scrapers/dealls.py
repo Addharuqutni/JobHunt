@@ -71,15 +71,22 @@ class DeallsScraper:
                                     if len(parts) > 1:
                                         location = parts[1].strip()
                                         break
-                                elif text.lower() in ['remote', 'hybrid', 'on-site']:
                                     location = text
+                            
+                            # Posting date is usually in a span containing 'ago' or 'hari'
+                            date = ""
+                            for span in card.find_all('span'):
+                                span_text = span.get_text(strip=True).lower()
+                                if 'ago' in span_text or 'hari' in span_text:
+                                    date = span.get_text(strip=True)
+                                    break
                             
                             # Link
                             link = f"{self.base_url}{card['href']}"
                             
-                            if save_job(title, company, location, link, "Dealls"):
+                            if save_job(title, company, location, link, "Dealls", date):
                                 results.append({"title": title, "company": company})
-                                print(f"  -> Found: {title} at {company} ({location})")
+                                print(f"  -> Found: {title} at {company} ({location}) - {date}")
                                 
                         except Exception as e:
                             print(f"Error parse card: {e}")
