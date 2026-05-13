@@ -1,111 +1,112 @@
-# 🕵️ JobSentinel: Advanced Job Aggregator & Notifier
+# JobSentinel — Job Scraping & Notification Platform
 
-**JobSentinel** is a robust, production-ready job scraping and alerting ecosystem. It transforms the tedious task of job hunting into a fully automated, real-time experience. Built for scalability and speed, it monitors premium job portals, deduplicates listings, and streams notifications directly to your Telegram.
+A full-stack job scraping platform with automated Telegram notifications, built with **Clean Architecture** principles.
 
----
-
-## ✨ Key Features
-
-### 🚀 Scalability & Performance (Phase 4)
-- **Hybrid Architecture**: Runs seamlessly on a single machine or scales into a distributed system using **Docker Compose**.
-- **Background Workers**: Heavy scraping tasks are offloaded to **Celery** workers, ensuring the API remains lightning-fast.
-- **Message Broker**: Powered by **Redis** for task queuing and distributed locking.
-- **Real-Time Progress**: Watch the scraper work in real-time via integrated **FastAPI WebSockets**.
-
-### 🔍 intelligent Scraping
-- **Multi-Source Support**: Deep integration with Jobstreet (Seek Asia), Kalibrr, Glints, and **Dealls**.
-- **SHA-256 Deduplication**: Smart hashing prevents duplicate notifications for the same job across different runs.
-- **Dynamic Depth**: Configure exactly how many pages to scrape per source directly from the UI.
-
-### 🔔 Smart Notifications
-- **Telegram Integration**: Beautifully formatted HTML messages sent directly to your phone.
-- **Auto-Chunking**: Automatically splits large result sets into multiple messages to respect Telegram's character limits.
-
-### 🛡️ Enterprise-Grade Security
-- **Strict Authentication**: Global `X-API-Key` protection for all endpoints and WebSocket connections.
-- **Robustness**: Local-first fallback mode ensures the app runs even without Redis/Celery.
-- **Clean Architecture**: Refactored for clean code, reusable services, and modular routing.
-
----
-
-## 🏗️ Architecture Stack
+## Tech Stack
 
 | Layer | Technology |
-| :--- | :--- |
-| **Frontend** | React 18, Vite, TypeScript, Lucide, Custom Vanilla CSS |
-| **Backend** | Python 3.13, FastAPI (Asynchronous API) |
-| **Broker** | Redis (Task Queue & Pub/Sub) |
-| **Worker** | Celery (Background Processing) |
-| **Database** | PostgreSQL (Production) / SQLite (Local Dev) |
-| **Scraper** | Playwright (Headless Chromium), BeautifulSoup4 |
+|-------|-----------|
+| Frontend | React 19 + TypeScript + Vite |
+| Backend | Python + FastAPI + SQLAlchemy |
+| Database | PostgreSQL |
+| Queue | Redis + Celery (optional) |
+| Scrapers | Jobstreet, Glints, Kalibrr, Dealls |
 
----
+## Architecture
 
-## 🚀 Installation & Setup
+### Backend — Clean Architecture
 
-### Option A: Standard Local Setup (Fastest for Dev)
-Use this if you don't want to use Docker. The app will automatically fall back to **Local Threading** and **SQLite**.
+```
+backend/app/
+├── domain/          # Pure entities, interfaces, value objects (ZERO deps)
+├── use_cases/       # Application business rules
+├── adapters/        # Repository & gateway implementations
+├── api/             # HTTP routes, schemas, app factory
+├── core/            # Config, DB, security, DI container
+└── scrapers/        # External scraper adapters
+```
 
-**1. Backend:**
+### Frontend — Feature-Based
+
+```
+src/
+├── features/        # Domain features (dashboard, jobs, scraper, settings)
+│   └── <feature>/
+│       ├── components/
+│       ├── hooks/
+│       ├── services/
+│       └── types.ts
+├── shared/          # Reusable hooks, utils, types, constants
+├── config/          # API configuration
+└── layouts/         # Page layouts
+```
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 18+
+- PostgreSQL 14+
+
+### Backend Setup
+
 ```bash
 cd backend
 python -m venv venv
 .\venv\Scripts\activate  # Windows
 pip install -r requirements.txt
-playwright install chromium
-python api.py
+cp .env.example .env     # Edit with your DB credentials
+
+# Start the API server
+uvicorn app.api.app:app --reload --port 8000
 ```
 
-**2. Frontend:**
+### Frontend Setup
+
 ```bash
-# From project root
 npm install
 npm run dev
 ```
 
----
-
-### Option B: Production Setup (Docker Compose)
-The full power of JobSentinel with Redis, Celery, and PostgreSQL.
+### Run Tests
 
 ```bash
-docker-compose up --build -d
+cd backend
+.\venv\Scripts\pytest.exe tests/unit/ -v
 ```
-*Access the Dashboard at `http://localhost`, and the API at `http://localhost:8000/docs`.*
 
----
+## API Endpoints
 
-## ⚙️ Configuration & Settings
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/jobs` | List jobs with filtering |
+| GET | `/api/stats` | Dashboard statistics |
+| GET | `/api/settings` | Retrieve settings |
+| POST | `/api/settings` | Update settings |
+| POST | `/api/scrape` | Trigger scraper pipeline |
+| WS | `/api/ws/scrape-status` | Real-time scraper progress |
+| GET | `/health` | Health check |
 
-Manage these directly from the **Dashboard > Settings** page:
+## Environment Variables
 
-| Setting | Description |
-| :--- | :--- |
-| **Keywords** | Comma-separated list of roles (e.g., `React Developer, Python`). |
-| **Telegram Bot Token** | Obtain this from @BotFather on Telegram. |
-| **Telegram Chat ID** | Your internal ID (Get it from @userinfobot). |
-| **Scraper Toggles** | Enable/Disable specific sources and set Page Depth. |
-| **Schedule Interval** | How often the background worker should fire (Hours). |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `API_KEY` | `dev-secret-key-123` | API authentication key |
+| `POSTGRES_USER` | `jobsentinel` | Database user |
+| `POSTGRES_PASSWORD` | `jobsentinel123` | Database password |
+| `POSTGRES_HOST` | `localhost` | Database host |
+| `POSTGRES_PORT` | `5432` | Database port |
+| `POSTGRES_DB` | `jobsentinel` | Database name |
+| `USE_REDIS` | `false` | Enable Redis/Celery mode |
+| `REDIS_URL` | `redis://localhost:6379/0` | Redis connection URL |
 
----
+## Docker
 
-## 🛡️ Security & Environment
+```bash
+docker-compose up -d
+```
 
-Create a `.env` in the root (for Docker) or set these in your OS:
+## License
 
-- `API_KEY`: Secret string for API authentication.
-- `USE_REDIS`: Set to `true` to enable Celery/WebSocket (Default: `false`).
-- `DB_URL`: Database connection string (e.g., `postgresql://user:pass@db:5432/jobs`).
-- `VITE_API_KEY`: Must match the backend `API_KEY`.
-
----
-
-## 🛠️ Troubleshooting
-
-- **Telegram "Chat Not Found"**: You MUST send `/start` to your bot first before it can message you.
-- **Connection Gagal**: Ensure `port 8000` is not being used by another application.
-- **Playwright Errors**: Run `playwright install` to ensure browser binaries are present.
-
----
-*Built for hackers, developers, and proactive job seekers.*
-
+Private project.

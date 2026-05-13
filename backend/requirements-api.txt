@@ -1,0 +1,46 @@
+# Core API dependencies — FastAPI, SQLAlchemy, Pydantic, Redis, Celery
+# Install with: pip install -r requirements-api.txt
+
+# Web framework
+fastapi==0.135.1
+uvicorn==0.41.0
+starlette==0.52.1
+websockets==15.0.1
+
+# Data validation
+pydantic==2.12.5
+pydantic-settings==2.13.1
+pydantic_core==2.41.5
+annotated-types==0.7.0
+typing_extensions==4.15.0
+
+# Database
+SQLAlchemy==2.0.48
+psycopg2-binary==2.9.11
+alembic==1.18.4
+greenlet==3.3.2
+
+# Redis & Celery
+redis==7.3.0
+celery==5.6.2
+kombu==5.6.2
+amqp==5.3.1
+billiard==4.2.4
+vine==5.1.0
+
+# HTTP client (for Telegram gateway)
+requests==2.32.5
+urllib3==2.6.3
+certifi==2026.1.4
+charset-normalizer==3.4.4
+idna==3.11
+
+# Utilities
+python-dotenv==1.2.1
+click==8.3.1
+h11==0.16.0
+anyio==4.12.1
+sniffio==1.3.1
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+Mako==1.3.10
